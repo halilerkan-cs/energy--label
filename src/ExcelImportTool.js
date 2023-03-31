@@ -1,20 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import * as xlsx from 'xlsx';
 import Helper from './Helper';
-import PdfCreator from './PdfCreator';
+import PdfCreator from './PdfCreator/PdfCreator';
+import { getInfoFromSheet, editTemp, editTime, editWater, editProgramName } from './Functions';
 
 export const ExcelImportTool = (props) => {
     const [file, setFile] = useState(null);
     const [fileName, setFileName] = useState('');
     const [data, setData] = useState(null);
     const [sheetNames, setSheetNames] = useState(null);
-    const [sheetData, setSheetData] = useState({});
     const [sheetInJsonArr, setSheetInJsonArr] = useState([]);
     const [isDone, setIsDone] = useState(false);
     const [loading, setLoading] = useState(false);
     const [mainBoardSheet, setMainBoardSheet] = useState(null);
-    const [cardInfo, setCardInfo] = useState(null);
-    const [shouldReadSheet, setShouldReadSheet] = useState(false);
+    const [infoSheet, setInfoSheet] = useState(null);
+    const [workBook, setWorkBook] = useState(null);
+    const [cardObject, setCardObject] = useState(null);
+    const [infoArray, setInfoArray] = useState([]);
+    const [updatedInfoArray, setUpdatedInfoArray] = useState([]);
     const [markets, setMarkets] = useState([
         'AU',
         'EU',
@@ -29,71 +32,9 @@ export const ExcelImportTool = (props) => {
         'UAE',
         'DE'
     ]);
-    const [sizes, setSizes] = useState(['45', '60', '90']);
-    const [sheetValues, setSheetValues] = useState([]);
 
     const fileRef = useRef();
     const acceptableFileExtension = ['xlsx', 'xls'];
-
-    const checkFileExtension = (name) => {
-        return acceptableFileExtension.includes(name.split('.').pop());
-    };
-
-    const isThereMainBoardSheet = () => {
-        const tempIndex = sheetNames.indexOf('Ana Kart Tablosu');
-
-        if (tempIndex == -1) {
-            setLoading(false);
-            handleRemove();
-            return false;
-        }
-        return true;
-    };
-
-    const getSheet = (sheetName) => {
-        var tempIndex = -1;
-
-        for (let i = 0; i < sheetNames.length; i++) {
-            if (sheetNames[i].includes(sheetName[0]) && sheetNames[i].includes(sheetName[1])) {
-                tempIndex = i;
-                break;
-            }
-        }
-
-        if (tempIndex == -1) {
-            if (sheetName == 'Ana Kart Tablosu') {
-                setLoading(false);
-                handleRemove();
-                alert(`\"Ana Kart Tablosu\" sayfası yok.`);
-            } else {
-                alert(`\"${sheetName}\" sayfası yok.`);
-            }
-
-            return;
-        }
-
-        return tempIndex;
-    };
-
-    useEffect(() => {
-        if (sheetNames != null) getSheet('Ana Kart Tablosu');
-    }, [sheetNames]);
-
-    const readDataFromExcel = async (data) => {
-        //async neden kısaltıyor?
-        var wb = xlsx.read(data, { bookSheets: true });
-
-        setSheetNames(wb.SheetNames);
-
-        wb = xlsx.read(data, { sheets: 'Ana Kart Tablosu' });
-        const mainBoardSheet_ = wb.Sheets['Ana Kart Tablosu'];
-
-        const jsonData = xlsx.utils.sheet_to_json(mainBoardSheet_, {
-            blankrows: '',
-            header: 1
-        });
-        setMainBoardSheet(jsonData);
-    };
 
     async function handleFileAsync(e) {
         await handleFile(e);
@@ -129,101 +70,237 @@ export const ExcelImportTool = (props) => {
         setFile(null);
         setFileName('');
         setIsDone(false);
-        setCardInfo(null);
+        setCardObject(null);
 
         fileRef.current.value = '';
     };
 
-    const fetchData = (cardInfo) => {
-        setCardInfo(() => cardInfo);
-        setShouldReadSheet(() => true);
+    const checkFileExtension = (name) => {
+        return acceptableFileExtension.includes(name.split('.').pop());
+    };
+
+    const fetchData = (cardObject) => {
+        setCardObject(() => cardObject);
+    };
+
+    const getCardObject = () => {
+        return cardObject;
+    };
+
+    const getInfoArray = () => {
+        return updatedInfoArray;
+    };
+
+    const getSheet = (sheetName) => {
+        const sheet = workBook.Sheets[sheetName];
+        if (sheet == undefined) {
+            setLoading(false);
+            handleRemove();
+            alert(`\"${sheetName}\" sayfası yok.`);
+        } else {
+            const jsonData = xlsx.utils.sheet_to_json(sheet, {
+                blankrows: '',
+                header: 1
+            });
+            return jsonData;
+        }
     };
 
     useEffect(() => {
-        // console.log(cardInfo);
-    }, [cardInfo]);
+        if (sheetNames != null) setMainBoardSheet(getSheet('Ana Kart Tablosu'));
+    }, [sheetNames]);
 
-    const fetchUpdatedData = () => {
-        return cardInfo;
+    const readDataFromExcel = async (data) => {
+        //async neden kısaltıyor?
+        var wb = xlsx.read(data);
+        setWorkBook(wb); //runned correct??
+        setSheetNames(wb.SheetNames);
+
+        // wb = xlsx.read(data, { sheets: 'Ana Kart Tablosu' });
     };
 
     useEffect(() => {
-        if (cardInfo == null) {
-            console.log('no sir');
+        if (cardObject == null) {
             return;
         }
-        console.log('yes sir');
 
-        const market = cardInfo['PAZAR'];
+        const market = cardObject['PAZAR'];
         var marketKey = '';
         for (const currMarket of markets) {
             if (market.includes(currMarket)) {
-                marketKey = marketKey.concat(currMarket);
+                if (currMarket.includes(currMarket)) marketKey = marketKey.concat(currMarket);
             }
         }
 
-        const size = cardInfo['Genişlik'].slice(0, 2);
-        var sizeKey = '';
-        for (const currSize of sizes) {
-            if (size.includes(currSize)) {
-                sizeKey = sizeKey.concat(currSize);
-            }
+        const size = cardObject['Genişlik'].slice(0, 2);
+        var sizeKey;
+        if (size.includes('45')) {
+            sizeKey = '45';
+        } else {
+            sizeKey = '60';
         }
-        alert(sizeKey + ', ' + marketKey);
 
-        // const indexSheet = getSheet([market, sizeVal]);
-        // alert(indexSheet);
+        const infoSheetName = 'PRG - ' + sizeKey + ' ' + marketKey;
+        const infoSheet_ = getSheet(infoSheetName);
 
-        setShouldReadSheet(() => false);
-    }, [cardInfo]);
+        setInfoSheet(() => infoSheet_);
+    }, [cardObject]);
 
-    const readSheet = () => {
-        setShouldReadSheet(() => true);
+    useEffect(() => {
+        if (infoSheet == null) {
+            return;
+        }
+        setInfoArray([]);
+
+        let wantedProgramCodes = [];
+        Object.entries(cardObject).forEach(([key, value]) => {
+            const pattern = /^P(?:[0-9]|10)$/;
+            if (pattern.test(key) && value != '') {
+                wantedProgramCodes.push(value);
+            }
+        });
+
+        let wantedColumns = [];
+        if (cardObject['PAZAR'].includes('USA')) {
+            wantedColumns = [
+                'ANA YIKAMA (°C)',
+                'ANA YIKAMA (°F)',
+                'SON DURULAMA  (°C)',
+                'SON DURULAMA (°F)',
+                'PROGRAM SÜRESİ (dak)',
+                'SU TÜKETİMİ (L)',
+                'SU TÜKETİMİ (gal)'
+            ];
+        } else {
+            wantedColumns = ['ANA YIKAMA', 'PROGRAM SÜRESİ (dak)', 'SU TÜKETİMİ (L)'];
+        }
+        wantedProgramCodes.map((progCode) => {
+            let infoObject = {};
+            if (progCode.includes('-')) {
+                infoObject = { ProgramName: progCode.substring(0, progCode.indexOf('-') - 1) };
+                progCode = progCode.slice(progCode.indexOf('-') + 2);
+            }
+
+            getInfoFromSheet(infoSheet, 'KOD', progCode, wantedColumns)
+                .then((infoArrays) => {
+                    infoArrays.map((info, index) => {
+                        let currColumn = wantedColumns[index];
+                        infoObject = { ...infoObject, [currColumn]: info };
+                    });
+                    setInfoArray((infoArray) => [...infoArray, infoObject]);
+                })
+                .catch((error) => {
+                    halt(error);
+                });
+        });
+    }, [infoSheet]);
+
+    useEffect(() => {
+        if (
+            cardObject == null ||
+            infoArray == [] ||
+            !cardObject.hasOwnProperty('PAZAR') ||
+            cardObject['PAZAR'] == null ||
+            infoArray.length != Object.keys(cardObject).length - 2
+        ) {
+            return;
+        }
+        let infoArrayCP = [...infoArray];
+        if (cardObject['PAZAR'].includes('USA')) {
+            infoArrayCP.map((infoObject, index) => {
+                let programName = editProgramName(infoObject['ProgramName']);
+                let washTemp = editTemp(
+                    infoObject['ANA YIKAMA (°F)'],
+                    infoObject['ANA YIKAMA (°C)']
+                );
+                let rinseTemp = editTemp(
+                    infoObject['SON DURULAMA (°F)'],
+                    infoObject['SON DURULAMA (°C)']
+                );
+                let time = editTime(infoObject['PROGRAM SÜRESİ (dak)'].toString());
+                let water = editWater(
+                    infoObject['SU TÜKETİMİ (gal)'],
+                    infoObject['SU TÜKETİMİ (L)']
+                );
+
+                infoArrayCP[index] = {
+                    ['Program Name']: programName,
+                    ['Dirtiness']: 'High-Medium',
+                    ['Wash Temps']: washTemp,
+                    ['Rinse Temps']: rinseTemp,
+                    ['Time(Approx.)']: time,
+                    ['Water']: water
+                };
+            });
+        }
+
+        setUpdatedInfoArray(infoArrayCP);
+    }, [infoArray]);
+
+    const halt = (msg) => {
+        // setIsRunning(() => false);
+        alert(msg);
     };
 
     return (
-        <div className="body">
+        <div className="body" style={{}}>
             {loading && (
                 <div className="loader-container">
                     <div className="spinner"></div>
                 </div>
             )}
 
-            <h5>{JSON.stringify(cardInfo)}</h5>
+            {/* <p style={{ width: '20em' }}>
+                {'CARD:\n' +
+                    JSON.stringify(cardObject) +
+                    '-------------------OLD:\n' +
+                    infoArray.map((obj) => obj['ProgramName']) +
+                    '-------------------UPDATED:\n' +
+                    updatedInfoArray.map((obj) => obj['Program Name'])}
+            </p> */}
 
-            {
-                <Helper
-                    mainBoardSheet={mainBoardSheet}
-                    sheetInJsonArr={sheetInJsonArr}
-                    fetchData={fetchData}
-                    // readSheet={readSheet}
-                />
-            }
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <div style={{ width: '23em', height: 'fit-content' }}>
+                    {
+                        <Helper
+                            mainBoardSheet={mainBoardSheet}
+                            sheetInJsonArr={sheetInJsonArr}
+                            fetchData={fetchData}
+                            // readSheet={readSheet}
+                        />
+                    }
 
-            <div className="file-container">
-                <input
-                    type="file"
-                    accept="xlsx, xls"
-                    id="file-input"
-                    multiple={false}
-                    onChange={(e) => handleFileAsync(e)}
-                    ref={fileRef}
-                    className="file-input"></input>
-                <label htmlFor="file-input" className="file-info">
-                    <i className="fa fa-upload" aria-hidden="true"></i>
-                    {fileName == '' ? '\u00A0Dosya Yüklenmedi' : '\u00A0' + fileName}
-                </label>
-
+                    <div className="file-container">
+                        <input
+                            type="file"
+                            accept="xlsx, xls"
+                            id="file-input"
+                            multiple={false}
+                            onChange={(e) => handleFileAsync(e)}
+                            ref={fileRef}
+                            className="file-input"></input>
+                        <label htmlFor="file-input" className="file-info">
+                            <i className="fa fa-upload" aria-hidden="true"></i>
+                            {fileName == '' ? '\u00A0Dosya Yüklenmedi' : '\u00A0' + fileName}
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
                 {fileName != '' && (
-                    <div style={{ marginLeft: '4.1em' }}>
+                    <div
+                        style={{
+                            margin: '1em 0 0 0',
+                            maxWidth: '100%',
+                            justifyContent: 'space-between'
+                        }}>
+                        <PdfCreator getInfoArray={getInfoArray} getCardObject={getCardObject} />
                         <button
                             onClick={handleRemove}
-                            id="remove-button"
-                            className="btn btn-warning btn-md"
-                            style={{ display: 'inline-block', marginRight: '0.9em' }}>
+                            className="btn btn-light btn-md"
+                            style={{ margin: '2em 1em 1em 1em' }}>
                             Dosyayı Kaldır
                         </button>
-                        <PdfCreator cardInfo={cardInfo} fetchUpdatedData={fetchUpdatedData} />
                     </div>
                 )}
             </div>

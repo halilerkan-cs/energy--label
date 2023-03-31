@@ -1,24 +1,25 @@
 import { React, useState, useEffect } from 'react';
+import { getInfoFromSheet } from './Functions';
 
 const Helper = (props) => {
     const [mainBoardSheet, setMainBoardSheet] = useState(null);
-    const [cardInfo, setCardInfo] = useState(null);
-    const [isRunning, setIsRunning] = useState(false);
+    const [cardObject, setCardObject] = useState(null);
+    const [isRunning, setRunning] = useState(false);
     const [wantedMainBoard, setWantedMainBoard] = useState(null);
     const [wantedBoardRow, setWantedBoardRow] = useState(null);
-    const [found, setFound] = useState(true);
+    const [found, setFound] = useState(false);
 
     useEffect(() => {
         if (isRunning == false) {
-            props.fetchData(cardInfo);
+            props.fetchData(cardObject);
             // props.readSheet();
         }
     }, [isRunning]);
 
     useEffect(() => {
-        if (found == false) {
+        if (found == true) {
             props.fetchData({});
-            setFound(() => true);
+            setFound(() => false);
         }
     }, [found]);
 
@@ -32,35 +33,52 @@ const Helper = (props) => {
         }
 
         if (mainBoardSheet == null) {
-            halt('no main sheet');
+            //should not alert when not uploaded file. alert another error.
+            halt("Excel dosyasında Main Board Sheet'i bulunamadı.");
             return;
         }
 
         if (wantedMainBoard == null) {
-            halt('no main board');
+            halt('Kart kodu girmediniz.');
             return;
         }
 
-        const indexTicket = findColumn('Range - Türev Kartlar (Yeni Etiket Geçişi)');
+        let wantedColumns = [
+            'Genişlik',
+            'PAZAR',
+            'P0',
+            'P1',
+            'P2',
+            'P3',
+            'P4',
+            'P5',
+            'P6',
+            'P7',
+            'P8',
+            'P9',
+            'P10'
+        ];
+        let updatedCardObject = {};
+        getInfoFromSheet(
+            mainBoardSheet,
+            'Range - Türev Kartlar (Yeni Etiket Geçişi)',
+            wantedMainBoard,
+            wantedColumns
+        )
+            .then((columnValues) => {
+                columnValues.map((val, index) => {
+                    if (val != '' && val != '-') {
+                        let currColumn = wantedColumns[index];
+                        updatedCardObject = { ...updatedCardObject, [currColumn]: val };
+                    }
+                });
+                setCardObject(() => updatedCardObject);
+            })
+            .catch((error) => {
+                halt(error);
+            });
 
-        var wantedRow = -1;
-
-        for (let i = 0; i < mainBoardSheet.length; i++) {
-            const currentRow = mainBoardSheet[i.toString()];
-            const ticket = currentRow[indexTicket];
-
-            if (ticket == wantedMainBoard) {
-                wantedRow = i;
-                break;
-            }
-        }
-
-        if (wantedRow != -1) {
-            setWantedBoardRow(mainBoardSheet[wantedRow.toString()]);
-        } else {
-            setFound(() => false);
-            halt(`Kart Bulunamadı: <${wantedMainBoard}>`);
-        }
+        setRunning(() => false);
     }, [isRunning]);
 
     useEffect(() => {
@@ -69,7 +87,7 @@ const Helper = (props) => {
         findInfo('Genişlik');
         findInfo('PAZAR');
 
-        setIsRunning(() => false);
+        // setRunning(() => false);
         setWantedBoardRow(() => null);
     }, [wantedBoardRow]);
 
@@ -80,18 +98,21 @@ const Helper = (props) => {
     const run = () => {
         if (isRunning == true) console.log('already tr 1 ');
 
-        setIsRunning(() => true);
+        setRunning(() => {
+            true;
+        });
     };
 
     const runWithEnter = (e) => {
         if (e.key !== 'Enter') return;
         if (isRunning == true) console.log('already tr 2 ');
 
-        setIsRunning(() => true);
+        setRunning(() => true);
     };
 
     const halt = (msg) => {
-        setIsRunning(() => false);
+        console.log('halting');
+        setRunning(() => false);
         alert(msg);
     };
 
@@ -101,8 +122,8 @@ const Helper = (props) => {
 
         if (wantedBoardRow == null) halt('no wanted board row');
 
-        setCardInfo((cardInfo) => {
-            const newState = { ...cardInfo, [columnName]: info };
+        setCardObject((cardObject) => {
+            const newState = { ...cardObject, [columnName]: info };
             return newState;
         });
     };
@@ -127,8 +148,9 @@ const Helper = (props) => {
     };
 
     return (
-        <div>
+        <div style={{ width: '100%' }}>
             <h1 className="h1">ANAKART BUL</h1>
+            &nbsp;
             <div className="search-box">
                 <i
                     className="fa fa-search"

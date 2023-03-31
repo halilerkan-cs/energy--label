@@ -1,5 +1,4 @@
 import { React, useState } from 'react';
-import CountrySelect from './CountrySelect';
 import * as xlsx from 'xlsx';
 import { ExcelImportTool } from './ExcelImportTool';
 import 'bootstrap/dist/css/bootstrap.min.css';
