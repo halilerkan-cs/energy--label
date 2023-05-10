@@ -2,9 +2,8 @@ import React, { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Button, Table } from 'react-bootstrap';
-import { border, rgbToHex } from '@mui/system';
 
-const PdfCreator = ({ getInfoArray }) => {
+const PdfCreator = ({ getInfoArray, getCardObject, getOptionInfoArray }) => {
     const componentRef = useRef();
     const handlePrint = useReactToPrint({
         content: () => componentRef.current,
@@ -19,17 +18,44 @@ const PdfCreator = ({ getInfoArray }) => {
     // ['Rinse Temps']: rinseTemp,
     // ['Time(Approx.)']: time,
     // ['Water']: water
-    const data = getInfoArray();
+
+    const cardObject = getCardObject();
+    const cycleInfoArray = getInfoArray();
+    const optionInfoArray = getOptionInfoArray();
+    console.log(optionInfoArray);
+
+    // console.log(data);
     const specs = ['Dirtiness', 'Wash Temps', 'Rinse Temps', 'Time(Approx.)', 'Water'];
 
     return (
-        <>
+        <div
+            style={{
+                display: 'flex',
+                gap: '1em',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+            <div
+                style={{
+                    backgroundColor: 'rgba(216, 216, 216, 0.2)',
+                    color: 'white',
+                    width: 'fit-content',
+                    padding: '0.3em',
+                    fontWeight: '500',
+                    fontSize: '1.5em'
+                }}>
+                Bastırılan Kartın Kodu:{' '}
+                {cardObject != null && cardObject['Range - Türev Kartlar Kodu']}
+            </div>
             <div ref={componentRef} style={{ backgroundColor: 'white', margin: '0' }}>
-                <Table bordered style={{ margin: 'auto' }}>
+                <Table bordered>
                     <thead style={{ backgroundColor: 'grey' }}>
                         <tr>
-                            <th>Cycles</th>
-                            {data?.map((item, i) => {
+                            <th key={0} style={{ width: '50px' }}>
+                                Cycles
+                            </th>
+                            {cycleInfoArray.map((item, i) => {
                                 return <th key={i}>{item['Program Name']}</th>;
                             })}
                         </tr>
@@ -39,7 +65,7 @@ const PdfCreator = ({ getInfoArray }) => {
                             return (
                                 <tr key={i}>
                                     <td>{spec}</td>
-                                    {data?.map((object, j) => {
+                                    {cycleInfoArray.map((object, j) => {
                                         return <td>{object[spec]}</td>;
                                     })}
                                 </tr>
@@ -47,11 +73,41 @@ const PdfCreator = ({ getInfoArray }) => {
                         })}
                     </tbody>
                 </Table>
+                {optionInfoArray && (
+                    <Table bordered>
+                        <thead style={{ backgroundColor: 'grey' }}>
+                            <tr>
+                                <th style={{ width: '50px' }}>Options(Time with Added Options)</th>
+                                <th></th>
+                                {optionInfoArray?.map(() => {
+                                    return <th></th>;
+                                })}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {optionInfoArray.map((obj, i) => {
+                                let timeArray = obj.timeValues;
+                                if (timeArray !== undefined)
+                                    return (
+                                        <tr key={i}>
+                                            <td>{obj.optionName}</td>
+                                            {timeArray.map((time) => {
+                                                return <td>{time}</td>;
+                                            })}
+                                        </tr>
+                                    );
+                            })}
+                        </tbody>
+                    </Table>
+                )}
             </div>
-            <Button variant="btn btn-light " style={{ margin: '1em 0 0 0' }} onClick={handlePrint}>
+            <Button
+                variant="btn btn-light "
+                style={{ width: 'fit-content', fontWeight: '900', fontSize: '1.5em' }}
+                onClick={handlePrint}>
                 PRINT
             </Button>
-        </>
+        </div>
     );
 };
 

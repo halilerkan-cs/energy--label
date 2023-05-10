@@ -1,5 +1,7 @@
-import { React, useState, useEffect } from 'react';
-import { getInfoFromSheet } from './Functions';
+import React, { useState, useEffect } from 'react';
+import { getInfoFromSheet } from './functions';
+import Heading from './components/UpperBody/Heading';
+import SearchBar from './components/UpperBody/SearchBar';
 
 const Helper = (props) => {
     const [mainBoardSheet, setMainBoardSheet] = useState(null);
@@ -58,7 +60,7 @@ const Helper = (props) => {
             'P9',
             'P10'
         ];
-        let updatedCardObject = {};
+        let updatedCardObject = { 'Range - Türev Kartlar Kodu': wantedMainBoard };
         getInfoFromSheet(
             mainBoardSheet,
             'Range - Türev Kartlar (Yeni Etiket Geçişi)',
@@ -91,23 +93,13 @@ const Helper = (props) => {
         setWantedBoardRow(() => null);
     }, [wantedBoardRow]);
 
-    const saveMainBoard = (e) => {
-        setWantedMainBoard(() => e.target.value);
-    };
-
-    const run = () => {
+    const run = (text) => {
         if (isRunning == true) console.log('already tr 1 ');
+        setWantedMainBoard(text);
 
         setRunning(() => {
             true;
         });
-    };
-
-    const runWithEnter = (e) => {
-        if (e.key !== 'Enter') return;
-        if (isRunning == true) console.log('already tr 2 ');
-
-        setRunning(() => true);
     };
 
     const halt = (msg) => {
@@ -148,23 +140,15 @@ const Helper = (props) => {
     };
 
     return (
-        <div style={{ width: '100%' }}>
-            <h1 className="h1">ANAKART BUL</h1>
-            &nbsp;
-            <div className="search-box">
-                <i
-                    className="fa fa-search"
-                    aria-hidden="true"
-                    onClick={run}
-                    style={{ cursor: 'pointer' }}></i>
-                <input
-                    type="text"
-                    name=""
-                    onChange={saveMainBoard}
-                    onKeyDown={runWithEnter}
-                    placeholder="Kart kodunu giriniz"
-                />
-            </div>
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.2em'
+            }}>
+            <Heading text={'ANAKART BUL'} />
+            <SearchBar run={run} />
         </div>
     );
 };
