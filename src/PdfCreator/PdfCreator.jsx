@@ -22,7 +22,7 @@ const PdfCreator = ({ getInfoArray, getCardObject, getOptionInfoArray }) => {
     const cardObject = getCardObject();
     const cycleInfoArray = getInfoArray();
     const optionInfoArray = getOptionInfoArray();
-    console.log(optionInfoArray);
+    // console.log(optionInfoArray);
 
     // console.log(data);
     const specs = ['Dirtiness', 'Wash Temps', 'Rinse Temps', 'Time(Approx.)', 'Water'];
@@ -73,7 +73,7 @@ const PdfCreator = ({ getInfoArray, getCardObject, getOptionInfoArray }) => {
                         })}
                     </tbody>
                 </Table>
-                {optionInfoArray && (
+                {/* {optionInfoArray && (
                     <Table bordered>
                         <thead style={{ backgroundColor: 'grey' }}>
                             <tr>
@@ -99,7 +99,7 @@ const PdfCreator = ({ getInfoArray, getCardObject, getOptionInfoArray }) => {
                             })}
                         </tbody>
                     </Table>
-                )}
+                )} */}
             </div>
             <Button
                 variant="btn btn-light "

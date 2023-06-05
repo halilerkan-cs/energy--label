@@ -208,40 +208,88 @@ export const editProgramName = (program) => {
 };
 
 export const editOptionObjectStructure = (programSequence, optionObject) => {
+    // console.log(optionObject);
     // debugger;
-    let optionInfoArray = [
-        { optionName: 'Deep Wash', timeValues: [] },
-        { optionName: 'Fast+', timeValues: [] },
-        { optionName: 'Steam Gloss', timeValues: [] },
-        { optionName: 'Sanitize', timeValues: [] },
-        { optionName: 'Half Load', timeValues: [] },
-        { optionName: 'MFT', timeValues: [] },
-        { optionName: 'Kapı Açma', timeValues: [] }
-    ];
+    // let optionInfoArray = [
+    //     { optionName: 'Deep Wash', timeValues: [] },
+    //     { optionName: 'Fast+', timeValues: [] },
+    //     { optionName: 'Steam Gloss', timeValues: [] },
+    //     { optionName: 'Sanitize', timeValues: [] },
+    //     { optionName: 'Half Load', timeValues: [] },
+    //     { optionName: 'MFT', timeValues: [] },
+    //     { optionName: 'Kapı Açma', timeValues: [] }
+    // ];
 
-    optionInfoArray.map((obj) => {
-        for (let index = 0; index < programSequence.length; index++) {
-            obj.timeValues.push(-1);
-        }
-    });
+    // optionInfoArray.map((obj) => {
+    //     for (let index = 0; index < programSequence.length; index++) {
+    //         obj.timeValues.push(-1);
+    //     }
+    // });
 
+    let updatedOptionObject = {};
     for (let item in optionObject) {
-        const optionArray = optionObject[item];
-        const programName = item;
+        // console.log(optionObject[item]);
+        let updatedOptionInfo = editOptionInfo(optionObject[item]);
+        updatedOptionObject = { ...updatedOptionObject, [item]: updatedOptionInfo };
+    }
+    // console.log(updatedOptionObject);
 
-        optionArray.map((option, index) => {
-            let optionIndex = findOption(option.optionName);
-            const programIndex = findProgram(programSequence, programName);
-            if (programIndex == -1) {
-                console.log(`${programName} not found!`);
-            }
-            if (optionIndex != 2 && optionIndex != 4) optionIndex = 1;
+    // for (let item in optionObject) {
+    //     const optionArray = optionObject[item];
+    //     const programName = item;
 
-            optionInfoArray[optionIndex].timeValues[programIndex] = option.leftTime;
-        });
+    //     optionArray.map((option, index) => {
+    //         let optionIndex = findOption(option.optionName);
+    //         const programIndex = findProgram(programSequence, programName);
+    //         if (programIndex == -1) {
+    //             console.log(`${programName} not found!`);
+    //         }
+    //         if (optionIndex != 2 && optionIndex != 4) optionIndex = 1;
+
+    //         optionInfoArray[optionIndex].timeValues[programIndex] = option.leftTime;
+    //     });
+    // }
+
+    return [];
+};
+
+const editOptionInfo = (optionInfoArray) => {
+    if (!Array.isArray(optionInfoArray)) {
+        console.log('not an array');
+        return [];
     }
 
-    return optionInfoArray;
+    for (let i = 0; i < optionInfoArray.length; i++) {
+        optionInfoArray[i].optionName = reduxOptionName(optionInfoArray[i].optionName);
+    }
+
+    let indexOfRepeat = -1;
+    for (let i = 0; i < optionInfoArray.length; i++) {
+        if (i != 0 && optionInfoArray[i].optionName.includes('FONKSİYONSUZ')) {
+            indexOfRepeat = i;
+            break;
+        }
+
+        //Traverse array and look for time difference
+        const time = [optionInfoArray[i].leftTime];
+        for (let j = i + 1; j < optionInfoArray.length; j++) {
+            if (optionInfoArray[j].optionName === optionInfoArray[i].optionName) {
+                if (!time.includes(optionInfoArray[j].leftTime)) {
+                    time.push(optionInfoArray[j].leftTime);
+                }
+            }
+        }
+
+        if (time.length != 1) {
+            optionInfoArray[i].leftTime = Math.min(...time) + ' - ' + Math.max(...time);
+        }
+    }
+
+    return optionInfoArray?.slice(0, indexOfRepeat);
+};
+
+const reduxOptionName = (name) => {
+    return name.substring(0, name.indexOf(' ('));
 };
 
 const findOption = (optionName) => {
@@ -296,6 +344,6 @@ export const combineOptionObjects = (generalObject, localObject) => {
         return { optionName, timeValues };
     });
 
-    console.log(generalObject);
+    // console.log(generalObject);
     return generalObject;
 };
