@@ -1,3 +1,6 @@
+#### Sample View of APP ####
+![örnek1](https://github.com/halilerkan-cs/energy--label/assets/75100033/ebedba75-0a7c-4a6d-8f9d-d7e63f15f17e)
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
